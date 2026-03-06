@@ -1,5 +1,5 @@
 #Embeded Devices Tools
-my_screen() {
+function ed_s() {    #screen serial port (port baud)
   local port_input=$1
   local screen_baud=${2:-115200}
   local final_port
@@ -16,7 +16,7 @@ my_screen() {
   screen /dev/tty."$final_port" "$screen_baud"
 }
 
-my_monitor() {
+function ed_m() {    #pio monitor serial port (port baud)
   local port_input=$1
   local baud=${2:-115200}
   local final_port
@@ -32,7 +32,7 @@ my_monitor() {
   pio device monitor --port /dev/cu."$final_port" --baud "$baud"
 }
 
-my_upload() {
+function ed_u() {    #pio run upload (env port upload/uploadfs)
   local env=$1
   local port_input=$2
   local target=${3:-upload}
@@ -55,13 +55,13 @@ my_upload() {
 }
 
 
-ls_d() {
+ls_ed() {    #list devices (cu/tty)
   ls /dev/$1.*
 }
 
 
 # Update terminal shortcuts from GitHub
-function update_embedded_shortcuts() {
+function update_embedded_shortcuts() {    #update shortcuts from github
     echo "⬇️  Fetching latest shortcuts from GitHub..."
     
     # URL to the raw file on GitHub
@@ -75,5 +75,20 @@ function update_embedded_shortcuts() {
     else
         echo "❌ Failed to update shortcuts. Check your internet connection."
     fi
+}
+
+function ls_edsc() {    # Show this help menu for embedded_shortcuts
+    echo "========================================================="
+    echo "             🛠️  Embedded Shortcuts Menu 🛠️"
+    echo "========================================================="
+    echo ""
+    echo "📌 ALIASES:"
+    # This removes the word 'alias', splits the line at '#', and aligns the text
+    grep "^alias" "$HOME/.embedded_shortcuts" | sed 's/alias //' | awk -F'#' '{ printf "  %-40s ➜ %s\n", $1, $2 }'
+    echo ""
+    echo "⚙️  FUNCTIONS:"
+    # This removes 'function' and '() {', splits at '#', and aligns the text
+    grep "^function" "$HOME/.embedded_shortcuts" | sed 's/function //' | sed 's/() {//' | awk -F'#' '{ printf "  %-40s ➜ %s\n", $1, $2 }'
+    echo "========================================================="
 }
 
