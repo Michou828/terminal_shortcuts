@@ -58,3 +58,22 @@ my_upload() {
 ls_d() {
   ls /dev/$1.*
 }
+
+
+# Update terminal shortcuts from GitHub
+function update_embedded_shortcuts() {
+    echo "⬇️  Fetching latest shortcuts from GitHub..."
+    
+    # URL to the raw file on GitHub
+    SHORTCUT_URL="https://raw.githubusercontent.com/Michou828/terminal_shortcuts/main/.embedded_shortcuts"
+    DEST_FILE="$HOME/.embedded_shortcuts"
+    
+    if curl -fsSL "$SHORTCUT_URL" -o "$DEST_FILE"; then
+        echo "♻️  Reloading shortcuts..."
+        source "$DEST_FILE"
+        echo "✅ Shortcuts updated successfully!"
+    else
+        echo "❌ Failed to update shortcuts. Check your internet connection."
+    fi
+}
+
