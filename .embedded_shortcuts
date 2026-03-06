@@ -1,0 +1,60 @@
+#Embeded Devices Tools
+my_screen() {
+  local port_input=$1
+  local screen_baud=${2:-115200}
+  local final_port
+
+  # Check if port_input is ONLY numbers (e.g., 101)
+  if [[ "$port_input" =~ ^[0-9]+$ ]]; then
+    final_port="usbmodem$port_input"
+  else
+    # It has letters (e.g., usbserial101), use as-is
+    final_port="$port_input"
+  fi
+
+  # Note: screen usually prefers /dev/tty. instead of /dev/cu.
+  screen /dev/tty."$final_port" "$screen_baud"
+}
+
+my_monitor() {
+  local port_input=$1
+  local baud=${2:-115200}
+  local final_port
+
+  # Check if port_input is ONLY numbers (e.g., 101)
+  if [[ "$port_input" =~ ^[0-9]+$ ]]; then
+    final_port="usbmodem$port_input"
+  else
+    # It has letters (e.g., usbserial101), use as-is
+    final_port="$port_input"
+  fi
+
+  pio device monitor --port /dev/cu."$final_port" --baud "$baud"
+}
+
+my_upload() {
+  local env=$1
+  local port_input=$2
+  local target=${3:-upload}
+  local final_port
+
+  if [[ -z "$port_input" ]]; then
+    # Case 1: No port provided (ZeroUSB)
+    pio run -e "$env" --target "$target"
+  else
+    # Case 2: Check if port_input is ONLY numbers
+    if [[ "$port_input" =~ ^[0-9]+$ ]]; then
+      final_port="usbmodem$port_input"
+    else
+      # Case 3: It has letters (like usbserial101), so use it raw
+      final_port="$port_input"
+    fi
+
+    pio run -e "$env" --target "$target" --upload-port /dev/cu."$final_port"
+  fi
+}
+
+
+ls_d() {
+  ls /dev/$1.*
+}
