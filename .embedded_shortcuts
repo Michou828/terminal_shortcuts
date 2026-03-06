@@ -55,7 +55,7 @@ function ed_u() {    #pio run upload (env port upload/uploadfs)
 }
 
 
-ls_ed() {    #list devices (cu/tty)
+function ls_ed() {    #list devices (cu/tty)
   ls /dev/$1.*
 }
 
