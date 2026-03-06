@@ -7,4 +7,4 @@ A centralized repository for custom terminal shortcuts, aliases, and functions. 
 You can install and apply these shortcuts on any new macOS or Linux machine with a single, clean command. Open your terminal and paste:
 
 ```zsh
-curl -fsSL [https://michou828.github.io/terminal_shortcuts/install.sh](https://michou828.github.io/terminal_shortcuts/install.sh) | zsh
+curl -fsSL https://michou828.github.io/terminal_shortcuts/install.sh | zsh
