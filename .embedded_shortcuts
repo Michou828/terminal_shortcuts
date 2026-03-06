@@ -64,8 +64,8 @@ function ls_ed() {    #list devices (cu/tty)
 function update_embedded_shortcuts() {    #update shortcuts from github
     echo "⬇️  Fetching latest shortcuts from GitHub..."
     
-    # URL to the raw file on GitHub
-    SHORTCUT_URL="https://raw.githubusercontent.com/Michou828/terminal_shortcuts/main/.embedded_shortcuts"
+    # Adding ?v=$RANDOM forces GitHub to bypass its 5-minute cache
+    SHORTCUT_URL="https://raw.githubusercontent.com/Michou828/terminal_shortcuts/main/.embedded_shortcuts?v=$RANDOM"
     DEST_FILE="$HOME/.embedded_shortcuts"
     
     if curl -fsSL "$SHORTCUT_URL" -o "$DEST_FILE"; then
