@@ -84,11 +84,11 @@ function ls_edsc() {    # Show this help menu for embedded_shortcuts
     echo ""
     echo "📌 ALIASES:"
     # This removes the word 'alias', splits the line at '#', and aligns the text
-    grep "^alias" "$HOME/.embedded_shortcuts" | sed 's/alias //' | awk -F'#' '{ printf "  %-40s ➜ %s\n", $1, $2 }'
+    grep "^alias" "$HOME/.embedded_shortcuts" | sed 's/alias //' | awk -F'#' '{ printf "  %-10s ➜ %s\n", $1, $2 }'
     echo ""
     echo "⚙️  FUNCTIONS:"
     # This removes 'function' and '() {', splits at '#', and aligns the text
-    grep "^function" "$HOME/.embedded_shortcuts" | sed 's/function //' | sed 's/() {//' | awk -F'#' '{ printf "  %-40s ➜ %s\n", $1, $2 }'
+    grep "^function" "$HOME/.embedded_shortcuts" | sed 's/function //' | sed 's/() {//' | awk -F'#' '{ printf "  %-10s ➜ %s\n", $1, $2 }'
     echo "========================================================="
 }
 
