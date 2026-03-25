@@ -24,24 +24,34 @@ Run `ls_edsc` at any time to print a help menu directly in your terminal.
 
 ---
 
-### `ed_s` — Open Serial Monitor (screen)
+### `ed_u` — Upload Firmware (PlatformIO)
 
-Opens a serial connection to a device using `screen`.
+Runs `pio run` to build and upload firmware to a device.
 
 ```zsh
-ed_s <port> [baud]
+ed_u [-e env] [-p port] [-t target]
 ```
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `port`    | Yes      | Port identifier. Can be a number (e.g. `101`) or a full name (e.g. `usbserial101`). Numbers are automatically prefixed with `usbmodem`. |
-| `baud`    | No       | Baud rate. Defaults to `115200`. |
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-e <env>` | No | PlatformIO environment name (from `platformio.ini`, e.g. `esp32`). If omitted and environments are defined in `platformio.ini`, you will be warned and prompted to confirm. |
+| `-p <port>` | No | Port identifier. Use `m<num>` for usbmodem (e.g. `m101`) or `s<num>` for usbserial (e.g. `s101`). If omitted, PlatformIO auto-detects. |
+| `-t <target>` | No | PlatformIO target. Defaults to `upload`. Use `uploadfs` to upload the filesystem image. |
+
+Flags can be passed in any order.
 
 **Examples:**
 ```zsh
-ed_s 101          # connects to /dev/tty.usbmodem101 at 115200 baud
-ed_s 101 9600     # connects at 9600 baud
-ed_s usbserial101 # connects to /dev/tty.usbserial101
+ed_u                          # simple project, no env defined — auto-detects port
+ed_u -e esp32                 # specify env, auto-detect port
+ed_u -e esp32 -p m101         # env + modem port
+ed_u -p s101 -t uploadfs      # serial port + filesystem upload, no env
+ed_u -e esp32 -p m101 -t uploadfs  # full control
+```
+
+**Backward-compatible positional style still works:**
+```zsh
+ed_u esp32 101 upload
 ```
 
 ---
@@ -51,64 +61,64 @@ ed_s usbserial101 # connects to /dev/tty.usbserial101
 Opens a serial monitor using `pio device monitor`.
 
 ```zsh
-ed_m <port> [baud]
+ed_m -p <port> [-b baud]
 ```
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `port`    | Yes      | Port identifier. Same rules as `ed_s` — numbers are prefixed with `usbmodem`. Uses `/dev/cu.*` path. |
-| `baud`    | No       | Baud rate. Defaults to `115200`. |
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-p <port>` | Yes | Port identifier. Use `m<num>` for usbmodem or `s<num>` for usbserial. Uses `/dev/cu.*` path. |
+| `-b <baud>` | No | Baud rate. Defaults to `115200`. |
 
 **Examples:**
 ```zsh
-ed_m 101          # monitors /dev/cu.usbmodem101 at 115200 baud
-ed_m 101 9600     # monitors at 9600 baud
-ed_m usbserial101 # monitors /dev/cu.usbserial101
+ed_m -p m101              # monitor /dev/cu.usbmodem101 at 115200 baud
+ed_m -p s101 -b 9600      # monitor /dev/cu.usbserial101 at 9600 baud
+```
+
+**Backward-compatible positional style still works:**
+```zsh
+ed_m 101
+ed_m 101 9600
 ```
 
 ---
 
-### `ed_u` — Upload Firmware (PlatformIO)
+### `ed_s` — Open Serial Monitor (screen)
 
-Runs `pio run` to build and upload firmware to a device.
+Opens a serial connection to a device using `screen`.
 
 ```zsh
-ed_u <env> [port] [target]
+ed_s -p <port> [-b baud]
 ```
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `env`     | Yes      | PlatformIO environment name (from `platformio.ini`, e.g. `esp32`, `samd21`). |
-| `port`    | No       | Port identifier. If omitted, PlatformIO auto-detects (useful for USB/ZeroUSB). Numbers are prefixed with `usbmodem`. |
-| `target`  | No       | PlatformIO target. Defaults to `upload`. Use `uploadfs` to upload the filesystem image. |
+| Flag | Required | Description |
+|------|----------|-------------|
+| `-p <port>` | Yes | Port identifier. Use `m<num>` for usbmodem or `s<num>` for usbserial. Uses `/dev/tty.*` path. |
+| `-b <baud>` | No | Baud rate. Defaults to `115200`. |
 
 **Examples:**
 ```zsh
-ed_u esp32                      # auto-detect port, upload firmware
-ed_u esp32 101                  # upload to /dev/cu.usbmodem101
-ed_u esp32 101 uploadfs         # upload filesystem to /dev/cu.usbmodem101
-ed_u samd21 usbserial101 upload # upload to /dev/cu.usbserial101
+ed_s -p m101              # connects to /dev/tty.usbmodem101 at 115200 baud
+ed_s -p s101 -b 9600      # connects to /dev/tty.usbserial101 at 9600 baud
+```
+
+**Backward-compatible positional style still works:**
+```zsh
+ed_s 101
+ed_s 101 9600
 ```
 
 ---
 
-### `ls_ed` — List Serial Devices
+### `ed_ls` — List Serial Devices
 
-Lists available serial devices matching a prefix under `/dev/`.
+Lists all available serial devices under `/dev/`.
 
 ```zsh
-ls_ed <type>
+ed_ls
 ```
 
-| Parameter | Required | Description |
-|-----------|----------|-------------|
-| `type`    | Yes      | Device prefix to filter by. Use `cu` to list `/dev/cu.*` devices or `tty` to list `/dev/tty.*` devices. |
-
-**Examples:**
-```zsh
-ls_ed cu   # lists all /dev/cu.* devices
-ls_ed tty  # lists all /dev/tty.* devices
-```
+No parameters. Shows both `/dev/cu.*` and `/dev/tty.*` devices.
 
 ---
 
@@ -136,11 +146,15 @@ No parameters.
 
 ---
 
-## Port Identifier Reference
+## Port Flag Reference
 
-All functions that accept a `port` argument follow the same resolution rules:
+All functions that accept a `-p` flag follow the same rules:
 
-- **Numbers only** (e.g. `101`) → expanded to `usbmodem101`
-- **Mixed alphanumeric** (e.g. `usbserial101`) → used as-is
+| Input | Resolves to |
+|-------|-------------|
+| `-p m101` | `usbmodem101` |
+| `-p s101` | `usbserial101` |
+| `101` *(positional, legacy)* | `usbmodem101` |
+| `usbserial101` *(positional, legacy)* | `usbserial101` |
 
 `ed_s` uses the `/dev/tty.*` path. `ed_m` and `ed_u` use the `/dev/cu.*` path.
