@@ -1,73 +1,174 @@
 #Embeded Devices Tools
-function ed_s() {    #screen serial port (port baud)
-  local port_input=$1
-  local screen_baud=${2:-115200}
-  local final_port
+function ed_u() {    #pio run upload (-e env -p m/s+port -t target)
+  local env=""
+  local port_input=""
+  local target="upload"
+  local final_port=""
+  local use_flags=false
 
-  # Check if port_input is ONLY numbers (e.g., 101)
-  if [[ "$port_input" =~ ^[0-9]+$ ]]; then
-    final_port="usbmodem$port_input"
+  for arg in "$@"; do
+    if [[ "$arg" == -* ]]; then
+      use_flags=true
+      break
+    fi
+  done
+
+  if $use_flags; then
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        -e) env="$2"; shift 2;;
+        -p) port_input="$2"; shift 2;;
+        -t) target="$2"; shift 2;;
+        *) shift;;
+      esac
+    done
   else
-    # It has letters (e.g., usbserial101), use as-is
-    final_port="$port_input"
+    # Backward-compatible positional args: ed_u <env> <port> <target>
+    env="$1"
+    port_input="$2"
+    target="${3:-upload}"
   fi
 
-  # Note: screen usually prefers /dev/tty. instead of /dev/cu.
-  screen /dev/tty."$final_port" "$screen_baud"
+  # Parse port: m101 -> usbmodem101, s101 -> usbserial101, 101 -> usbmodem101 (legacy)
+  if [[ -n "$port_input" ]]; then
+    if [[ "$port_input" == m* ]]; then
+      final_port="usbmodem${port_input#m}"
+    elif [[ "$port_input" == s* ]]; then
+      final_port="usbserial${port_input#s}"
+    elif [[ "$port_input" =~ ^[0-9]+$ ]]; then
+      final_port="usbmodem$port_input"
+    else
+      final_port="$port_input"
+    fi
+  fi
+
+  # If no env given, warn if platformio.ini has [env:*] sections
+  if [[ -z "$env" ]]; then
+    if grep -q "^\[env:" platformio.ini 2>/dev/null; then
+      echo "⚠️  Warning: platformio.ini defines environments but no -e flag was given."
+      echo -n "   Press Enter to continue without specifying an env, or Ctrl+C to cancel... "
+      read
+    fi
+  fi
+
+  # Build and run command
+  local -a cmd=(pio run)
+  [[ -n "$env" ]] && cmd+=(-e "$env")
+  cmd+=(--target "$target")
+  [[ -n "$final_port" ]] && cmd+=(--upload-port "/dev/cu.$final_port")
+  "${cmd[@]}"
 }
 
-function ed_m() {    #pio monitor serial port (port baud)
-  local port_input=$1
-  local baud=${2:-115200}
-  local final_port
 
-  # Check if port_input is ONLY numbers (e.g., 101)
-  if [[ "$port_input" =~ ^[0-9]+$ ]]; then
+function ed_m() {    #pio monitor serial port (-p m/s+port -b baud)
+  local port_input=""
+  local baud=115200
+  local final_port=""
+  local use_flags=false
+
+  for arg in "$@"; do
+    if [[ "$arg" == -* ]]; then
+      use_flags=true
+      break
+    fi
+  done
+
+  if $use_flags; then
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        -p) port_input="$2"; shift 2;;
+        -b) baud="$2"; shift 2;;
+        *) shift;;
+      esac
+    done
+    if [[ -z "$port_input" ]]; then
+      echo "❌ Error: -p <port> is required. Example: ed_m -p m101"
+      return 1
+    fi
+  else
+    # Backward-compatible positional args: ed_m <port> <baud>
+    port_input="$1"
+    baud="${2:-115200}"
+  fi
+
+  # Parse port: m101 -> usbmodem101, s101 -> usbserial101, 101 -> usbmodem101 (legacy)
+  if [[ "$port_input" == m* ]]; then
+    final_port="usbmodem${port_input#m}"
+  elif [[ "$port_input" == s* ]]; then
+    final_port="usbserial${port_input#s}"
+  elif [[ "$port_input" =~ ^[0-9]+$ ]]; then
     final_port="usbmodem$port_input"
   else
-    # It has letters (e.g., usbserial101), use as-is
     final_port="$port_input"
   fi
 
   pio device monitor --port /dev/cu."$final_port" --baud "$baud"
 }
 
-function ed_u() {    #pio run upload (env port upload/uploadfs)
-  local env=$1
-  local port_input=$2
-  local target=${3:-upload}
-  local final_port
 
-  if [[ -z "$port_input" ]]; then
-    # Case 1: No port provided (ZeroUSB)
-    pio run -e "$env" --target "$target"
-  else
-    # Case 2: Check if port_input is ONLY numbers
-    if [[ "$port_input" =~ ^[0-9]+$ ]]; then
-      final_port="usbmodem$port_input"
-    else
-      # Case 3: It has letters (like usbserial101), so use it raw
-      final_port="$port_input"
+function ed_s() {    #screen serial port (-p m/s+port -b baud)
+  local port_input=""
+  local baud=115200
+  local final_port=""
+  local use_flags=false
+
+  for arg in "$@"; do
+    if [[ "$arg" == -* ]]; then
+      use_flags=true
+      break
     fi
+  done
 
-    pio run -e "$env" --target "$target" --upload-port /dev/cu."$final_port"
+  if $use_flags; then
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        -p) port_input="$2"; shift 2;;
+        -b) baud="$2"; shift 2;;
+        *) shift;;
+      esac
+    done
+    if [[ -z "$port_input" ]]; then
+      echo "❌ Error: -p <port> is required. Example: ed_s -p m101"
+      return 1
+    fi
+  else
+    # Backward-compatible positional args: ed_s <port> <baud>
+    port_input="$1"
+    baud="${2:-115200}"
   fi
+
+  # Parse port: m101 -> usbmodem101, s101 -> usbserial101, 101 -> usbmodem101 (legacy)
+  if [[ "$port_input" == m* ]]; then
+    final_port="usbmodem${port_input#m}"
+  elif [[ "$port_input" == s* ]]; then
+    final_port="usbserial${port_input#s}"
+  elif [[ "$port_input" =~ ^[0-9]+$ ]]; then
+    final_port="usbmodem$port_input"
+  else
+    final_port="$port_input"
+  fi
+
+  # Note: screen uses /dev/tty. instead of /dev/cu.
+  screen /dev/tty."$final_port" "$baud"
 }
 
 
-function ls_ed() {    #list devices (cu/tty)
-  ls /dev/$1.*
+function ed_ls() {    #list devices (cu and tty)
+  echo "--- /dev/cu.* ---"
+  ls /dev/cu.* 2>/dev/null
+  echo "--- /dev/tty.* ---"
+  ls /dev/tty.* 2>/dev/null
 }
 
 
 # Update terminal shortcuts from GitHub
 function update_embedded_shortcuts() {    #update shortcuts from github
     echo "⬇️  Fetching latest shortcuts from GitHub..."
-    
+
     # Adding ?v=$RANDOM forces GitHub to bypass its 5-minute cache
     SHORTCUT_URL="https://raw.githubusercontent.com/Michou828/terminal_shortcuts/main/.embedded_shortcuts?v=$RANDOM"
     DEST_FILE="$HOME/.embedded_shortcuts"
-    
+
     if curl -fsSL "$SHORTCUT_URL" -o "$DEST_FILE"; then
         echo "♻️  Reloading shortcuts..."
         source "$DEST_FILE"
